@@ -10,21 +10,13 @@ function getUsers() {
     return db('users');
 }
 
-function getUserById(id) {
-    return db('users')
-    .where({id})
-    .first();
-}
-
 function authUser(condition) {
     return db('users')
-   .where(condition);
+        .where(condition)
+        .first();
 }
 
 function addUser(user) {
     return db('users')
-      .insert(user, 'id')
-      .then(id => {
-        return getUserById(id);
-      });
-  }
+        .insert(user, 'id')
+}
