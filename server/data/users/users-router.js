@@ -24,6 +24,7 @@ router.post('/login', (req, res) => {
         .first()
         .then(user => {
             if (user && bcrypt.compareSync(password, user.password)) {
+                req.session.user = user;
                 res.status(201).json({ message: `Welcome, ${username}` });
             } else {
                 res.status(400).json({ errorMessage: 'invalid user credentials' })
@@ -34,7 +35,22 @@ router.post('/login', (req, res) => {
         })
 })
 
-router.get('/users', authenticate, (req, res) => {
+router.get('/logout', (req, res) => {
+    if (req.session) { 
+        req.session.destroy(err => {
+            if (err) {
+                res.json({message: 'unable to logout'});
+            } else {
+                console.log(req.session)
+                res.status(200).json({message: 'logout succesful'});
+            }
+        })
+    } else {
+        res.status(200).json({message: 'you are not logged in yet'});
+    }
+})
+
+router.get('/users', restricted, (req, res) => {
     Users.getUsers()
         .then(users => {
             res.json(users);
@@ -46,23 +62,11 @@ router.get('/users', authenticate, (req, res) => {
 
 //Middleware
 
-function authenticate(req, res, next) {
-    const { username, password } = req.headers;
-    if (username && password) {
-        Users.authUser({ username })
-            .first()
-            .then(user => {
-                if (user && bcrypt.compareSync(password, user.password)) {
-                    console.log('Welcome,', username);
-                } else {
-                    res.status(401).json({ errorMessage: 'You shall not pass!' })
-                }
-            })
-            .catch(err => {
-                res.status(400).json({ errorMessage: 'login failed' })
-            })
+function restricted(req, res, next) {
+    if (req.session && req.session.user) {
+        console.log('already logged in');
     } else {
-        res.status(400).json({ errorMessage: 'invalid user credentials' })
+        res.status(400).json({ errorMessage: 'You shall not pass' })
     }
     next();
 }
